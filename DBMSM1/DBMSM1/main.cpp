@@ -6,6 +6,9 @@
 //  Copyright © 2017年 CQQ. All rights reserved.
 //
 
+// disk size must larger than memory size
+// do not consider LRU algorithm
+
 #include <iostream>
 #include <cstdio>
 #include <cstring>
@@ -13,7 +16,7 @@
 
 #define OS_Block_Size 4096 // OS Allocation Block Size
 #define Empty_Space_ratio 0.3 // Empty Space Ratio
-#define FilePath "/Users/CQQ/Documents/GitHub/CQQDBMS/DBMSM1/DBMSM1/test.txt"
+#define FilePath "test.txt"
 
 using namespace std;
 
@@ -22,18 +25,24 @@ struct header_info {
     int size;
 };
 
-int disk_size = 100; // changeable
-int memory_size = 4099; // changeable
+// wait add counter blockNo header info
+// when the block isn't full write back to disk then reload to add data
 
-int disk_head_address = 0;
+int disk_size = 100; // changeable
+int memory_size = 10000; // changeable
+
+int block_no = 0;
+int disk_head_address = 0; // when write data to disk
+int bheader_length = 5; // save block head infomation(counter)
+
 int Block_Size = OS_Block_Size * 1;
-int header_address = 0;
+int header_address = bheader_length;
 int current_address = Block_Size - 2;
-const int header_info_length = 25;
+const int header_info_length = 15;
 
 char* allocate_memory(int size);
 struct header_info get_header_info(char* p);
-bool write_data(char* p, char* data  = "test string");
+bool write_data(char* p, int block_no, char* data  = "test string");
 bool write_disk(FILE* fd, char* p);
 FILE* allocate_disk();
 void test();
@@ -53,8 +62,8 @@ char* allocate_memory(int size) {
         printf("Not enough memory\n");
         return NULL;
     } else {
-        p = (char*)malloc(Block_Size);
-        memset(p, '-', Block_Size);
+        p = (char*)malloc(block_num * Block_Size);
+        memset(p, '-', Block_Size*block_num);
         printf(p == NULL ? "Allocate memory failed\n" : "Allocate memory success\n");
         *(p+Block_Size-1) = '#'; // waiting for delete
     }
@@ -68,18 +77,18 @@ struct header_info get_header_info(char* p) {
     return hi;
 }
 
-bool write_data(char* p, char* data) {
+bool write_data(char* p, int block_no, char* data) {
     if(current_address - header_address < Block_Size * Empty_Space_ratio) {
         printf("Achieve the limitation of empty space\n");
         return 0;
     } else {
         header_info hi = get_header_info(data);
-        strncpy(p+hi.address, data, strlen(data)); // write data
+        strncpy(p+block_no*Block_Size+hi.address, data, strlen(data)); // write data
         current_address = hi.address - 1; // update current_address
         // write header info
         char tmp[header_info_length];
         sprintf(tmp,"%d\t%d\t", hi.address, hi.size);
-        strncpy(p+header_address, tmp, strlen(tmp));
+        strncpy(p+block_no*Block_Size+header_address, tmp, strlen(tmp));
         header_address += header_info_length;
     }
     return 1;
@@ -91,13 +100,10 @@ bool write_disk(FILE* fd, char* p) {
         printf("open file fail\n");
         return 0;
     } else {
-        if(disk_head_address+Block_Size < disk_size*1024) {
+        if(disk_head_address+Block_Size*block_no+1 < disk_size*1024) {
             fseek(fd, disk_head_address, SEEK_SET);
-            fwrite(p, Block_Size, 1, fd);
+            fwrite(p, Block_Size, block_no+1, fd);
             disk_head_address += Block_Size;
-            // test
-            // fseek(fd, disk_head_address, SEEK_SET);
-            // fwrite(p, Block_Size, 1, fd);
             fseek(fd, disk_size*1024, SEEK_SET);
             fprintf(fd,"\t");
         } else {
@@ -122,8 +128,13 @@ FILE* allocate_disk() {
 }
 
 void set_param() {
-    header_address = 0;
+    block_no += 1;
+    header_address = bheader_length;
     current_address = Block_Size - 2;
+}
+
+void write_block_head(char* p, int block_no) {
+    
 }
 
 void test() {
@@ -132,25 +143,22 @@ void test() {
     if(p==NULL) {
         printf("allocate memory failed\n");
     } else {
+        // write data to block 0
         while(true) {
-            if(!write_data(p)) {
-                write_disk(fd, p);
+            if(!write_data(p, block_no)) {
                 break;
             }
         }
-        puts(p);
-        //system("pause");
         set_param();
-        memset(p, '-', Block_Size);
-        *(p+Block_Size-1) = '#';
+        *(p+Block_Size*block_no-1) = '#';
+        // write data to block 1
         while(true) {
-            if(!write_data(p,"hello world")) {
-                write_disk(fd, p);
+            if(!write_data(p, block_no, "hello world")) {
                 break;
             }
         }
         puts(p);
-        //system("pause");
+        write_disk(fd, p);
     }
     fclose(fd);
 }
