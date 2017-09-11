@@ -25,18 +25,19 @@ struct header_info {
     int size;
 };
 
-// wait add counter blockNo header info
 // when the block isn't full write back to disk then reload to add data
 
 int disk_size = 100; // changeable
 int memory_size = 10000; // changeable
 
-int block_no = 0;
+int block_no = 0; // No. of the memory block
 int disk_head_address = 0; // when write data to disk
-int bheader_length = 5; // save block head infomation(counter)
+
+int counter = 0; // count the num of record(data)
+const int counter_length = 5; // save block head infomation(counter)
 
 int Block_Size = OS_Block_Size * 1;
-int header_address = bheader_length;
+int header_address = counter_length;
 int current_address = Block_Size - 2;
 const int header_info_length = 15;
 
@@ -90,6 +91,12 @@ bool write_data(char* p, int block_no, char* data) {
         sprintf(tmp,"%d\t%d\t", hi.address, hi.size);
         strncpy(p+block_no*Block_Size+header_address, tmp, strlen(tmp));
         header_address += header_info_length;
+        
+        counter += 1;
+        
+        char count[counter_length+1];
+        sprintf(count, "%d", counter);
+        strncpy(p+block_no*Block_Size, count, strlen(count));
     }
     return 1;
 }
@@ -128,8 +135,9 @@ FILE* allocate_disk() {
 }
 
 void set_param() {
+    counter = 0;
     block_no += 1;
-    header_address = bheader_length;
+    header_address = counter_length;
     current_address = Block_Size - 2;
 }
 
