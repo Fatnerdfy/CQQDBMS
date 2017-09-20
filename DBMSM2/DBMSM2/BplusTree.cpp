@@ -19,12 +19,29 @@ void Node::setKeyCnt(int cnt) {
     this->KeyCnt = cnt;
 }
 
+bool Node::getLeaf() {
+    return isLeafNode;
+}
+
+string Node::getKey(int i) {
+    return Key[i];
+}
+
+Node* Node::getChild(int i) {
+    return Child[i];
+}
+
+void Node::setLeaf(bool isleaf) {
+    this->isLeafNode = isleaf;
+}
+
 void Node::setChild(int ch, Node* child) {
     this->Child[ch] = child;
 }
 
 void Node::clear() {
     KeyCnt = 0;
+    isLeafNode = false;
     memset(Key, NULL, sizeof(Key));
     memset(Child, NULL, sizeof(Child));
 }
@@ -32,9 +49,13 @@ void Node::clear() {
 void Node::insertKey(string key) {
     Key[KeyCnt++] = key;
     sort(Key, Key+KeyCnt); // sort Key
+    if(this->KeyCnt==Node::MaxKeyCnt) {
+        this->split();
+    }
 }
 
-void Node::spilt() {
+void Node::split() {
+    
     // create right child
     Node* rchild = new Node(0);
     rchild->setKeyCnt(Node::MinKeyCnt);
@@ -46,13 +67,42 @@ void Node::spilt() {
     }
     
     // create left child
-    Node* lchild = new Node(0);
-    lchild->setKeyCnt(this->KeyCnt - Node::MinKeyCnt);
-    for (int i = 0; i < lchild->KeyCnt; i++) {
-        lchild->Key[i] = this->Key[i+Node::MinKeyCnt];
+    Node* lchild;
+    if (isLeafNode) {
+        lchild = new Node(1);
+        lchild->setKeyCnt(this->KeyCnt - Node::MinKeyCnt);
+        for (int i = 0; i < lchild->KeyCnt; i++) {
+            lchild->Key[i] = this->Key[i+Node::MinKeyCnt];
+        }
+        for (int i = MinChildCnt; i < this->KeyCnt+1; i++) {
+            lchild->Child[i] = this->Child[i];
+        }
+    } else {
+        lchild = new Node(0);
+        lchild->setKeyCnt(this->KeyCnt - Node::MinKeyCnt);
+        for (int i = 0; i < lchild->KeyCnt; i++) {
+            lchild->Key[i] = this->Key[i+Node::MinKeyCnt+1];
+        }
+        for (int i = MinChildCnt; i < this->KeyCnt+1; i++) {
+            lchild->Child[i] = this->Child[i];
+        }
     }
-    for (int i = MinChildCnt; i < this->KeyCnt+1; i++) {
-        lchild->Child[i] = this->Child[i];
+    
+    // BplusTree - link the data of leaf node
+    if (isLeafNode) {
+        rchild->isLeafNode = true;
+        rchild->Child[rchild->KeyCnt] = lchild;
+        lchild->Child[0] = rchild;
+        
+        if (this->Child[0]!=NULL) {
+            Node* leftLeaf = this->Child[0];
+            leftLeaf->Child[leftLeaf->KeyCnt] = lchild;
+        }
+        
+        if (this->Child[this->KeyCnt]!=NULL) {
+            Node* rightLeaf = this->Child[this->KeyCnt];
+            rightLeaf->Child[0] = rchild;
+        }
     }
     
     // rebuild parent
@@ -64,30 +114,27 @@ void Node::spilt() {
 }
 
 
-
-
 BplusTree::BplusTree() {
-    depth = 0;
     root = NULL;
 }
 
 void BplusTree::insert(string key) {
     if (root==NULL) {
-        root = new Node(0);
+        root = new Node(1);
         root->insertKey(key);
-    } else if (depth==0) {
+    } else if (root->getLeaf()) {
         root->insertKey(key);
-        cout << "key is" << root->KeyCnt << endl;
-        if(root->KeyCnt==Node::MaxKeyCnt) {
-            root->spilt();
-            depth += 1;
-        }
     } else {
-        // Node* pCurNode = root; // a pointer to current node
-        
-        // for (int i = 0; i < pCurNode->KeyCnt; i++) {
-        
-        // }
+        Node* pCurNode = root; // a pointer to current node
+        while (!pCurNode->getLeaf()) {
+            for (int i = 0; i <= pCurNode->KeyCnt; i++) {
+                if (key < pCurNode->getKey(i)) {
+                    pCurNode = pCurNode->getChild(i);
+                    break;
+                }
+            }
+        }
+        pCurNode->insertKey(key);
     }
 }
 

@@ -12,27 +12,24 @@
 
 using namespace std;
 
-void p();
 void test();
 
 int main(int argc, const char * argv[]) {   
-    // insert code here...
-    std::cout << "Hello, Worlddd!\n";
-    test();
+
+    //test();
+    string a = "a";
+    string b = "b";
+    cout << (a < b ? "y":"n");
     return 0;
 }
 
-void p() {
-    string l[3];
-    l[0] = "ad";
-    l[1] = "io";
-    cout << l << endl;
-}
 void test() {
     BplusTree* bpt = new BplusTree;
     bpt->insert("1.I");
-    bpt->insert("2.love");
-    bpt->insert("3.you");
+    bpt->insert("2.ll");
+    bpt->insert("3.pp");
+    bpt->insert("4.");
+    bpt->insert("5.");
     bpt->tt();
 }
 

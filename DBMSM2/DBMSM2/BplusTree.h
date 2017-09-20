@@ -11,7 +11,7 @@
 
 #include <string>
 #include <cstdlib>
-#define M 3 // order of BplusTree
+#define M 5 // order of BplusTree
 
 using namespace std;
 
@@ -31,16 +31,19 @@ private:
 public:
     friend BplusTree;
     Node(int isLeaf);
+    bool getLeaf();
+    string getKey(int i);
+    Node* getChild(int i);
+    void setLeaf(bool isleaf);
     void setKeyCnt(int cnt);
     void setChild(int ch, Node* child);
     void insertKey(string key);
-    void spilt();
+    void split();
     void clear();
 };
 
 class BplusTree {
 private:
-    int depth;
     Node* root;
 public:
     BplusTree();
