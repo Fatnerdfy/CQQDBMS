@@ -11,7 +11,7 @@
 
 #include <string>
 #include <cstdlib>
-#define M 5 // order of BplusTree
+#define M 3 // order of BplusTree
 
 using namespace std;
 
@@ -22,6 +22,7 @@ private:
     bool isLeafNode;
     int KeyCnt;
     string Key[M];
+    Node* Parent;
     Node* Child[M+1];
     //string Data[M+1]; // store the data of a record
     static const int MaxKeyCnt = M;
@@ -30,16 +31,18 @@ private:
     static const int MaxChildCnt = MaxKeyCnt + 1;
 public:
     friend BplusTree;
-    Node(int isLeaf);
+    ~Node();
+    Node(bool isLeaf);
     bool getLeaf();
     string getKey(int i);
     Node* getChild(int i);
-    void setLeaf(bool isleaf);
+    void setParent(Node* parent);
     void setKeyCnt(int cnt);
     void setChild(int ch, Node* child);
     void insertKey(string key);
     void split();
     void clear();
+    void printInfo();
 };
 
 class BplusTree {
@@ -49,11 +52,8 @@ public:
     BplusTree();
     ~BplusTree();
     void insert(string key);
-    
-    void tt();
+    void printTree();
 };
-
-
 
 #endif /* BplusTree_h */
 
