@@ -186,6 +186,7 @@ bool BplusTree::find(string key) {
         }
     }
     for (int i = 0; i < pCurNode->KeyCnt; i++) {
+        // if return the data of this key, return its child pointer
         if (key==pCurNode->Key[i]) return true;
     }
     return false;
