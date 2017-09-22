@@ -6,6 +6,7 @@
 //  Copyright © 2017年 CQQ. All rights reserved.
 //
 
+#include <queue>
 #include <iostream>
 #include <algorithm>
 #include "BplusTree.h"
@@ -16,20 +17,19 @@ void test();
 
 int main(int argc, const char * argv[]) {   
 
-    //test();
-    string a = "a";
-    string b = "b";
-    cout << (a < b ? "y":"n");
+    test();
     return 0;
 }
 
 void test() {
     BplusTree* bpt = new BplusTree;
-    bpt->insert("1.I");
-    bpt->insert("2.ll");
-    bpt->insert("3.pp");
-    bpt->insert("4.");
-    bpt->insert("5.");
-    bpt->tt();
+    string tmp;
+    int num = 10;
+    while(num--) {
+        cin >> tmp;
+        bpt->insert(tmp);
+    }
+    bpt->printTree();
 }
+
 
