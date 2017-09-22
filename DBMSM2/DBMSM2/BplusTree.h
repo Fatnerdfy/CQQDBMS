@@ -51,6 +51,7 @@ private:
 public:
     BplusTree();
     ~BplusTree();
+    bool find(string key); // return bool to test, later will return the data of the key
     void insert(string key);
     void printTree();
 };

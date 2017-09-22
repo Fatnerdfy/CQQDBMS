@@ -172,6 +172,25 @@ BplusTree::BplusTree() {
     root = new Node(1);
 }
 
+bool BplusTree::find(string key) {
+    Node* pCurNode = root; // a pointer to current node
+    while (!pCurNode->getLeaf()) {
+        for (int i = 0; i < pCurNode->KeyCnt; i++) {
+            if (key <= pCurNode->getKey(i)) {
+                pCurNode = pCurNode->getChild(i);
+                break;
+            } else if (i==pCurNode->KeyCnt - 1) {
+                pCurNode = pCurNode->getChild(pCurNode->KeyCnt);
+                break;
+            }
+        }
+    }
+    for (int i = 0; i < pCurNode->KeyCnt; i++) {
+        if (key==pCurNode->Key[i]) return true;
+    }
+    return false;
+}
+
 void BplusTree::insert(string key) {
     if (root->getLeaf()) {
         root->insertKey(key);
