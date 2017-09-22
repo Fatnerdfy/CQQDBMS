@@ -30,6 +30,8 @@ void test() {
         bpt->insert(tmp);
     }
     bpt->printTree();
+    cout << bpt->find("aa") << endl;
+    cout << bpt->find("sad") << endl;
 }
 
 
