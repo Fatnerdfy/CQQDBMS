@@ -10,6 +10,8 @@
 #include <queue>
 #include <iostream>
 
+
+///----------------------Node-----------------
 Node::Node(bool isLeaf) {
     KeyCnt = 0;
     Parent = NULL;
@@ -168,6 +170,76 @@ void Node::printInfo() {
     cout << "\n" << endl;
 }
 
+void Node::deleteLeafKey(string key) {
+    
+    int curNode = 0;
+    int leftNode = 0;
+    int rightNode = 0;
+    Node* pNode = this->Parent;
+    // find curNode position and its brother
+    if (pNode != nullptr) {
+        for (int i = 0; i < pNode->KeyCnt + 1; ++i) {
+            if (pNode->Child[i]==this) {
+                curNode = i;
+                leftNode = i - 1;
+                rightNode = i + 1;
+            }
+        }
+    }
+    // delete key in leafNode
+    for (int i = 0; i < this->KeyCnt; ++i) {
+        if (this->Key[i] == key) {
+            this->Key[i] = this->Key[KeyCnt - 1];
+            KeyCnt--;
+            sort(this->Key, this->Key+KeyCnt); // sort Key
+            break;
+        }
+    }
+    if (this->KeyCnt > (M + 1) / 2 - 1) {
+        // update this father node index
+        if (pNode != nullptr && curNode != 0) {
+            pNode->Key[curNode - 1] = this->Key[0];
+        }
+    } else {
+        Node* left = nullptr;
+        left = leftNode >= 0 ? pNode->Child[leftNode] : nullptr;
+        Node* right = nullptr;
+        right = rightNode <= pNode->KeyCnt + 1 ? pNode->Child[rightNode] : nullptr;
+        if (left != nullptr && left->KeyCnt >= (M + 1) / 2) {
+                this->Key[this->KeyCnt++] = left->Key[left->KeyCnt - 1];
+                sort(this->Key, this->Key + this->KeyCnt);
+                left->KeyCnt--;
+                // update parent node search key
+                pNode->Key[leftNode] = this->Key[0];
+        } else if (right != nullptr && right->KeyCnt >= (M + 1) / 2) {
+                this->Key[this->KeyCnt++] = right->Key[0];
+                for (int i = 0; i < right->KeyCnt - 1; ++i) {
+                    right->Key[i] = right->Key[i + 1];
+                }
+                right->KeyCnt--;
+                // update parent node search key
+                pNode->Key[rightNode - 1] = this->Key[KeyCnt - 1];
+        } else if (left != nullptr) {
+            //mergeNode()......
+            for (int i = 0; i < this->KeyCnt; ++i) {
+                left->Key[KeyCnt++] = this->Key[i];
+            }
+        } else {
+            //mergeNode()......
+            for (int i = 0; i < this->KeyCnt; ++i) {
+                right->Key[KeyCnt++] = this->Key[i];
+            }
+            sort(right->Key, right->Key + right->KeyCnt);
+        }
+    }
+    
+}
+
+void Node::deleteInteralKey(string key, Node* rightSubtree) {
+    
+}
+
+///--------------------BplusTree------------------------------
 BplusTree::BplusTree() {
     root = new Node(1);
 }
@@ -192,7 +264,7 @@ bool BplusTree::find(string key) {
     return false;
 }
 
-void BplusTree::insert(string key) {
+void BplusTree::insertData(string key) {
     if (root->getLeaf()) {
         root->insertKey(key);
     } else {
@@ -228,7 +300,21 @@ void BplusTree::printTree() {
     }
 }
 
-
+void BplusTree::deleteData(string key) {
+    Node* pCurNode = root;
+    while (!pCurNode->getLeaf()) {
+        for (int i = 0; i < pCurNode->KeyCnt; i++) {
+            if (key <= pCurNode->getKey(i)) {
+                pCurNode = pCurNode->getChild(i);
+                break;
+            } else if (i==pCurNode->KeyCnt - 1) {
+                pCurNode = pCurNode->getChild(pCurNode->KeyCnt);
+                break;
+            }
+        }
+    }
+    pCurNode->deleteLeafKey(key);
+}
 
 
 
