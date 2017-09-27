@@ -13,10 +13,12 @@
 
 using namespace std;
 
+void tt();
 void test();
 
 int main(int argc, const char * argv[]) {   
 
+    //tt();
     test();
     return 0;
 }
@@ -24,15 +26,20 @@ int main(int argc, const char * argv[]) {
 void test() {
     BplusTree* bpt = new BplusTree;
     string tmp;
-    int num = 10;
+    int num = 3;
     while(num--) {
         cin >> tmp;
         bpt->insertData(tmp);
     }
     bpt->printTree();
-    while (bpt->doChoice()) {
-        ;
-    }
+    //while (bpt->doChoice()) {
+    //    ;
+    //}
+    cin >> tmp;
+    bpt->deleteData(tmp);
+    cin >> tmp;
+    bpt->deleteData(tmp);
+    bpt->printTree();
 }
 
 
