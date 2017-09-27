@@ -44,7 +44,7 @@ public:
     void clear();
     void printInfo();
     void deleteLeafKey(string key);
-    void deleteInteralKey(string key, Node* rightSubtree);
+    void deleteInteralKey(string key, Node* curNode, Node* rightChild);
 };
 
 class BplusTree {
@@ -57,6 +57,7 @@ public:
     void insertData(string key);
     void printTree();
     void deleteData(string key);
+    bool doChoice();
 };
 
 #endif /* BplusTree_h */

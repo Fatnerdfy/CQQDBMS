@@ -21,7 +21,6 @@ Node::Node(bool isLeaf) {
 }
 
 Node::~Node() {
-    delete this;
 }
 
 void Node::setKeyCnt(int cnt) {
@@ -150,6 +149,7 @@ void Node::split() {
         p->Child[pos+1] = rchild;
         lchild->setParent(p);
         rchild->setParent(p);
+        delete this;
         p->insertKey(strtmp);
     } else {
         this->clear();
@@ -176,6 +176,28 @@ void Node::deleteLeafKey(string key) {
     int leftNode = 0;
     int rightNode = 0;
     Node* pNode = this->Parent;
+    // find key in node
+    bool find = false;
+    for (int i = 0; i < this->KeyCnt; ++i) {
+        if (this->Key[i] == key) {
+            find = true;
+            break;
+        }
+    }
+    if (find == false) {
+        return ;
+    } else {
+        // delete key in leafNode
+        for (int i = 0; i < this->KeyCnt; ++i) {
+            if (this->Key[i] == key) {
+                this->Key[i] = this->Key[this->KeyCnt - 1];
+                this->KeyCnt--;
+                sort(this->Key, this->Key + this->KeyCnt); // sort Key
+                break;
+            }
+        }
+    }
+    
     // find curNode position and its brother
     if (pNode != nullptr) {
         for (int i = 0; i < pNode->KeyCnt + 1; ++i) {
@@ -183,60 +205,172 @@ void Node::deleteLeafKey(string key) {
                 curNode = i;
                 leftNode = i - 1;
                 rightNode = i + 1;
+                break;
             }
         }
     }
-    // delete key in leafNode
-    for (int i = 0; i < this->KeyCnt; ++i) {
-        if (this->Key[i] == key) {
-            this->Key[i] = this->Key[KeyCnt - 1];
-            KeyCnt--;
-            sort(this->Key, this->Key+KeyCnt); // sort Key
-            break;
-        }
-    }
-    if (this->KeyCnt > (M + 1) / 2 - 1) {
-        // update this father node index
+    
+    if (this->KeyCnt >= (M + 1) / 2 - 1) {
+        // --------------------------------
+        // this node is not underflow
+        // --------------------------------
+        // update the search key in the parent node
         if (pNode != nullptr && curNode != 0) {
             pNode->Key[curNode - 1] = this->Key[0];
         }
     } else {
+        // --------------------------------------------------
+        // this node is underflow
+        // fix the size of this node with transfer or merge
+        // --------------------------------------------------
         Node* left = nullptr;
         left = leftNode >= 0 ? pNode->Child[leftNode] : nullptr;
         Node* right = nullptr;
         right = rightNode <= pNode->KeyCnt + 1 ? pNode->Child[rightNode] : nullptr;
         if (left != nullptr && left->KeyCnt >= (M + 1) / 2) {
-                this->Key[this->KeyCnt++] = left->Key[left->KeyCnt - 1];
-                sort(this->Key, this->Key + this->KeyCnt);
-                left->KeyCnt--;
-                // update parent node search key
-                pNode->Key[leftNode] = this->Key[0];
+            // ---------------------------------------------------------
+            // 1.transfer last key and ptr from left node to this node
+            // 2.update the search key in the parent node
+            // ---------------------------------------------------------
+            //------------------remember to copy data......
+            this->Key[this->KeyCnt++] = left->Key[left->KeyCnt - 1];
+            sort(this->Key, this->Key + this->KeyCnt);
+            left->KeyCnt--;
+            // update the search key in the parent node
+            pNode->Key[leftNode] = this->Key[0];
         } else if (right != nullptr && right->KeyCnt >= (M + 1) / 2) {
-                this->Key[this->KeyCnt++] = right->Key[0];
-                for (int i = 0; i < right->KeyCnt - 1; ++i) {
-                    right->Key[i] = right->Key[i + 1];
-                }
-                right->KeyCnt--;
-                // update parent node search key
-                pNode->Key[rightNode - 1] = this->Key[KeyCnt - 1];
+            // ----------------------------------------------------------
+            // 1.transfer first key and ptr from right node to this node
+            // 2.update the search key in the parent node
+            // ----------------------------------------------------------
+            //------------------remember to copy data......
+            this->Key[this->KeyCnt++] = right->Key[0];
+            for (int i = 0; i < right->KeyCnt - 1; ++i) {
+                right->Key[i] = right->Key[i + 1];
+            }
+            right->KeyCnt--;
+            // update the search key in the parent node
+            pNode->Key[rightNode - 1] = this->Key[this->KeyCnt - 1];
         } else if (left != nullptr) {
-            //mergeNode()......
+            //------------------remember to copy data......
             for (int i = 0; i < this->KeyCnt; ++i) {
-                left->Key[KeyCnt++] = this->Key[i];
+                left->Key[left->KeyCnt++] = this->Key[i];
             }
+            this->deleteInteralKey(this->Key[0], pNode, this);
         } else {
-            //mergeNode()......
-            for (int i = 0; i < this->KeyCnt; ++i) {
-                right->Key[KeyCnt++] = this->Key[i];
+            //------------------remember to copy data......
+            for (int i = 0; i < right->KeyCnt; ++i) {
+                this->Key[this->KeyCnt++] = right->Key[i];
             }
-            sort(right->Key, right->Key + right->KeyCnt);
+            this->deleteInteralKey(right->Key[0], pNode, right);
         }
     }
     
 }
 
-void Node::deleteInteralKey(string key, Node* rightSubtree) {
-    
+void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
+    int curIndex = 0;
+    int leftIndex = 0;
+    int rightIndex = 0;
+    Node* pNode = curNode->Parent;
+    // delete key and right child in curNode
+    for (int i = 0; i < curNode->KeyCnt; ++i) {
+        if (curNode->Key[i] == key && curNode->Child[i + 1] == rightChild) {
+            curNode->Key[i] = curNode->Key[curNode->KeyCnt - 1];
+            delete curNode->Child[i + 1];
+            for (int j = i + 1; j < curNode->KeyCnt; ++j) {
+                curNode->Child[j] = curNode->Child[j + 1];
+            }
+            curNode->KeyCnt--;
+            sort(curNode->Key, curNode->Key + curNode->KeyCnt);
+            break;
+        }
+    }
+    // find curNode position and its brother
+    if (pNode != nullptr) {
+        for (int i = 0; i < pNode->KeyCnt + 1; ++i) {
+            if (pNode->Child[i]==curNode) {
+                curIndex = i;
+                leftIndex = i - 1;
+                rightIndex = i + 1;
+                break;
+            }
+        }
+    }
+    Node* left = nullptr;
+    Node* right = nullptr;
+    left = leftIndex >= 0 ? pNode->Child[leftIndex] : nullptr;
+    right = rightIndex <= pNode->KeyCnt ? pNode->Child[rightIndex] : nullptr;
+    // --------------------------------------
+    // check for underflow condition
+    // --------------------------------------
+    if (curNode->KeyCnt >= (M + 1) / 2 - 1) {
+        // update parent search key
+        return ;
+        // -------------------------------------------------
+        // curNode is underflow
+        // fix the size of curNode with transfer or merge
+        // -------------------------------------------------
+    } else if (left != nullptr && left->KeyCnt >= (M + 1) / 2) {
+        // --------------------------------------------------------------------------------
+        // 1.transfer last key from left node through parent into curNode as the first key
+        // 2.transfer right child link into curNode as the first link
+        // --------------------------------------------------------------------------------
+        for (int i = curNode->KeyCnt; i > 0; --i) {
+            curNode->Key[i] = curNode->Key[i - 1];
+            curNode->Child[i + 1] = curNode->Child[i];
+        }
+        curNode->KeyCnt++;
+        curNode->Child[1] = curNode->Child[0];
+        
+        curNode->Key[0] = pNode->Key[leftIndex];
+        curNode->Child[0] = left->Child[left->KeyCnt];
+        pNode->Key[leftIndex] = left->Key[left->KeyCnt - 1];
+        left->KeyCnt--;
+    } else if (right != nullptr && right->KeyCnt >= (M + 1) / 2) {
+        // ----------------------------------------------------------------------------------
+        // 1.transfer first key from right node through parent into curNode as the last key
+        // 2.transfer left child link into curNode as the last link
+        // ----------------------------------------------------------------------------------
+        curNode->Key[curNode->KeyCnt++] = pNode->Key[curIndex];
+        curNode->Child[curNode->KeyCnt] = right->Child[0];
+        
+        pNode->Key[curIndex] = right->Key[0];
+        
+        for (int i = 0; i < right->KeyCnt - 1; ++i) {
+            right->Key[i] = right->Key[i + 1];
+        }
+        right->KeyCnt--;
+    } else if (left != nullptr) {
+        // --------------------------------------------------------------------------------
+        // 1.merge left node and curNode into left node
+        // 2.transfer the key from parent node between the 2 pieces
+        // 3.delete (transfered key, parent, right child, link)
+        // --------------------------------------------------------------------------------
+        string transferedKey = pNode->Key[leftIndex];
+        left->Key[left->KeyCnt++] = pNode->Key[leftIndex];
+        
+        for (int i = 0; i < curNode->KeyCnt + 1; ++i) {
+            left->Child[left->KeyCnt + i] = curNode->Child[i];
+        }
+        for (int i = 0; i < curNode->KeyCnt; ++i) {
+            left->Key[left->KeyCnt++] = curNode->Key[i];
+        }
+        
+        deleteInteralKey(transferedKey, pNode, curNode);
+    } else {
+        string transferedKey = pNode->Key[curIndex];
+        curNode->Key[curNode->KeyCnt++] = pNode->Key[curIndex];
+        
+        for (int i = 0; i < right->KeyCnt + 1; ++i) {
+            curNode->Child[curNode->KeyCnt + i] = right->Child[i];
+        }
+        for (int i = 0; i < right->KeyCnt; ++i) {
+            curNode->Key[curNode->KeyCnt++] = right->Key[i];
+        }
+        
+        deleteInteralKey(transferedKey, pNode, right);
+    }
 }
 
 ///--------------------BplusTree------------------------------
@@ -304,7 +438,7 @@ void BplusTree::deleteData(string key) {
     Node* pCurNode = root;
     while (!pCurNode->getLeaf()) {
         for (int i = 0; i < pCurNode->KeyCnt; i++) {
-            if (key <= pCurNode->getKey(i)) {
+            if (key < pCurNode->getKey(i)) {
                 pCurNode = pCurNode->getChild(i);
                 break;
             } else if (i==pCurNode->KeyCnt - 1) {
@@ -316,6 +450,42 @@ void BplusTree::deleteData(string key) {
     pCurNode->deleteLeafKey(key);
 }
 
+bool BplusTree::doChoice() {
+    cout << "insert : 1" << endl;
+    cout << "delete : 2" << endl;
+    cout << "find key : 3" << endl;
+    cout << "print tree : 4" << endl;
+    cout << "please do your chioce: ";
+    int choice;
+    cin >> choice;
+    string tmp;
+    switch (choice) {
+        case 1:
+            cout << "please input the key: ";
+            cin >> tmp;
+            insertData(tmp);
+            break;
+            
+        case 2:
+            cout << "please input the key: ";
+            cin >> tmp;
+            deleteData(tmp);
+            break;
+        
+        case 3:
+            cout << "please input the key: ";
+            cin >> tmp;
+            find(tmp);
+            break;
+        
+        case 4:
+            printTree();
+        default:
+            return false;
+            break;
+    }
+    return true;
+}
 
 
 

@@ -27,11 +27,12 @@ void test() {
     int num = 10;
     while(num--) {
         cin >> tmp;
-        bpt->insert(tmp);
+        bpt->insertData(tmp);
     }
     bpt->printTree();
-    cout << bpt->find("aa") << endl;
-    cout << bpt->find("sad") << endl;
+    while (bpt->doChoice()) {
+        ;
+    }
 }
 
 
