@@ -170,7 +170,7 @@ void Node::printInfo() {
     cout << "\n" << endl;
 }
 
-void Node::deleteLeafKey(string key) {
+void Node::deleteLeafKey(string key, BplusTree* bpt) {
     
     int curNode = 0;
     int leftNode = 0;
@@ -199,6 +199,8 @@ void Node::deleteLeafKey(string key) {
     }
     
     // find curNode position and its brother
+    Node* left = nullptr;
+    Node* right = nullptr;
     if (pNode != nullptr) {
         for (int i = 0; i < pNode->KeyCnt + 1; ++i) {
             if (pNode->Child[i]==this) {
@@ -208,6 +210,10 @@ void Node::deleteLeafKey(string key) {
                 break;
             }
         }
+        left = leftNode >= 0 ? pNode->Child[leftNode] : nullptr;
+        right = rightNode <= pNode->KeyCnt + 1 ? pNode->Child[rightNode] : nullptr;
+    } else {
+        return ;
     }
     
     if (this->KeyCnt >= (M + 1) / 2 - 1) {
@@ -223,10 +229,6 @@ void Node::deleteLeafKey(string key) {
         // this node is underflow
         // fix the size of this node with transfer or merge
         // --------------------------------------------------
-        Node* left = nullptr;
-        left = leftNode >= 0 ? pNode->Child[leftNode] : nullptr;
-        Node* right = nullptr;
-        right = rightNode <= pNode->KeyCnt + 1 ? pNode->Child[rightNode] : nullptr;
         if (left != nullptr && left->KeyCnt >= (M + 1) / 2) {
             // ---------------------------------------------------------
             // 1.transfer last key and ptr from left node to this node
@@ -250,25 +252,31 @@ void Node::deleteLeafKey(string key) {
             }
             right->KeyCnt--;
             // update the search key in the parent node
-            pNode->Key[rightNode - 1] = this->Key[this->KeyCnt - 1];
+            pNode->Key[rightNode - 1] = right->Key[0];
         } else if (left != nullptr) {
             //------------------remember to copy data......
             for (int i = 0; i < this->KeyCnt; ++i) {
                 left->Key[left->KeyCnt++] = this->Key[i];
             }
-            this->deleteInteralKey(this->Key[0], pNode, this);
-        } else {
+            if (pNode->Parent == nullptr && pNode->KeyCnt == 1) {
+                bpt->setRoot(left);
+            }
+            this->deleteInteralKey(this->Key[0], pNode, this, bpt);
+        } else if (right != nullptr) {
             //------------------remember to copy data......
             for (int i = 0; i < right->KeyCnt; ++i) {
                 this->Key[this->KeyCnt++] = right->Key[i];
             }
-            this->deleteInteralKey(right->Key[0], pNode, right);
+            if (pNode->Parent == nullptr && pNode->KeyCnt == 1) {
+                bpt->setRoot(right);
+            }
+            this->deleteInteralKey(right->Key[0], pNode, right, bpt);
         }
     }
     
 }
 
-void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
+void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild, BplusTree* bpt) {
     int curIndex = 0;
     int leftIndex = 0;
     int rightIndex = 0;
@@ -287,6 +295,8 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
         }
     }
     // find curNode position and its brother
+    Node* left = nullptr;
+    Node* right = nullptr;
     if (pNode != nullptr) {
         for (int i = 0; i < pNode->KeyCnt + 1; ++i) {
             if (pNode->Child[i]==curNode) {
@@ -296,11 +306,11 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
                 break;
             }
         }
+        left = leftIndex >= 0 ? pNode->Child[leftIndex] : nullptr;
+        right = rightIndex <= pNode->KeyCnt ? pNode->Child[rightIndex] : nullptr;
+    } else {
+        return ;
     }
-    Node* left = nullptr;
-    Node* right = nullptr;
-    left = leftIndex >= 0 ? pNode->Child[leftIndex] : nullptr;
-    right = rightIndex <= pNode->KeyCnt ? pNode->Child[rightIndex] : nullptr;
     // --------------------------------------
     // check for underflow condition
     // --------------------------------------
@@ -325,6 +335,7 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
         
         curNode->Key[0] = pNode->Key[leftIndex];
         curNode->Child[0] = left->Child[left->KeyCnt];
+        curNode->Child[0]->Parent = curNode;
         pNode->Key[leftIndex] = left->Key[left->KeyCnt - 1];
         left->KeyCnt--;
     } else if (right != nullptr && right->KeyCnt >= (M + 1) / 2) {
@@ -334,11 +345,15 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
         // ----------------------------------------------------------------------------------
         curNode->Key[curNode->KeyCnt++] = pNode->Key[curIndex];
         curNode->Child[curNode->KeyCnt] = right->Child[0];
+        curNode->Child[curNode->KeyCnt]->Parent = curNode;
         
         pNode->Key[curIndex] = right->Key[0];
         
         for (int i = 0; i < right->KeyCnt - 1; ++i) {
             right->Key[i] = right->Key[i + 1];
+        }
+        for (int i = 0; i < right->KeyCnt; ++i) {
+            right->Child[i] = right->Child[i + 1];
         }
         right->KeyCnt--;
     } else if (left != nullptr) {
@@ -352,13 +367,21 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
         
         for (int i = 0; i < curNode->KeyCnt + 1; ++i) {
             left->Child[left->KeyCnt + i] = curNode->Child[i];
+            left->Child[left->KeyCnt + i]->Parent = left;
         }
         for (int i = 0; i < curNode->KeyCnt; ++i) {
             left->Key[left->KeyCnt++] = curNode->Key[i];
         }
+        if (pNode->Parent == nullptr && pNode->KeyCnt == 1) {
+            bpt->setRoot(left);
+            for (int i = 0; i < left->KeyCnt + 1; ++i) {
+                left->Child[i]->Parent = left;
+            }
+            left->Parent = nullptr;
+        }
         
-        deleteInteralKey(transferedKey, pNode, curNode);
-    } else {
+        deleteInteralKey(transferedKey, pNode, curNode, bpt);
+    } else if (right != nullptr) {
         // --------------------------------------------------------------------------------
         // 1.merge right node and curNode into curNode
         // 2.transfer the key from parent node between the 2 pieces
@@ -369,18 +392,30 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
         
         for (int i = 0; i < right->KeyCnt + 1; ++i) {
             curNode->Child[curNode->KeyCnt + i] = right->Child[i];
+            curNode->Child[curNode->KeyCnt + i]->Parent = curNode;
         }
         for (int i = 0; i < right->KeyCnt; ++i) {
             curNode->Key[curNode->KeyCnt++] = right->Key[i];
         }
+        if (pNode->Parent == nullptr && pNode->KeyCnt == 1) {
+            bpt->setRoot(curNode);
+            for (int i = 0; i < curNode->KeyCnt + 1; ++i) {
+                curNode->Child[i]->Parent = curNode;
+            }
+            curNode->Parent = nullptr;
+        }
         
-        deleteInteralKey(transferedKey, pNode, right);
+        deleteInteralKey(transferedKey, pNode, right, bpt);
     }
 }
 
 ///--------------------BplusTree------------------------------
 BplusTree::BplusTree() {
     root = new Node(1);
+}
+
+void BplusTree::setRoot(Node* nr) {
+    this->root = nr;
 }
 
 bool BplusTree::find(string key) {
@@ -452,7 +487,7 @@ void BplusTree::deleteData(string key) {
             }
         }
     }
-    pCurNode->deleteLeafKey(key);
+    pCurNode->deleteLeafKey(key, this);
 }
 
 bool BplusTree::doChoice() {

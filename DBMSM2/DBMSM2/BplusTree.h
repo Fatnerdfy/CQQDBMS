@@ -43,8 +43,8 @@ public:
     void split();
     void clear();
     void printInfo();
-    void deleteLeafKey(string key);
-    void deleteInteralKey(string key, Node* curNode, Node* rightChild);
+    void deleteLeafKey(string key, BplusTree* bpt);
+    void deleteInteralKey(string key, Node* curNode, Node* rightChild, BplusTree* bpt);
 };
 
 class BplusTree {
@@ -53,6 +53,7 @@ private:
 public:
     BplusTree();
     ~BplusTree();
+    void setRoot(Node* nr);
     bool find(string key); // return bool to test, later will return the data of the key
     void insertData(string key);
     void printTree();
