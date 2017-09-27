@@ -359,6 +359,11 @@ void Node::deleteInteralKey(string key, Node* curNode, Node* rightChild) {
         
         deleteInteralKey(transferedKey, pNode, curNode);
     } else {
+        // --------------------------------------------------------------------------------
+        // 1.merge right node and curNode into curNode
+        // 2.transfer the key from parent node between the 2 pieces
+        // 3.delete (transfered key, parent, right child, link)
+        // --------------------------------------------------------------------------------
         string transferedKey = pNode->Key[curIndex];
         curNode->Key[curNode->KeyCnt++] = pNode->Key[curIndex];
         
