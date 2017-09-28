@@ -26,20 +26,15 @@ int main(int argc, const char * argv[]) {
 void test() {
     BplusTree* bpt = new BplusTree;
     string tmp;
-    int num = 3;
+    int num = 6;
     while(num--) {
         cin >> tmp;
         bpt->insertData(tmp);
     }
     bpt->printTree();
-    //while (bpt->doChoice()) {
-    //    ;
-    //}
-    cin >> tmp;
-    bpt->deleteData(tmp);
-    cin >> tmp;
-    bpt->deleteData(tmp);
-    bpt->printTree();
+    while (bpt->doChoice()) {
+        ;
+    }
 }
 
 

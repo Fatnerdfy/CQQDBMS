@@ -520,6 +520,8 @@ bool BplusTree::doChoice() {
         
         case 4:
             printTree();
+            break;
+            
         default:
             return false;
             break;
